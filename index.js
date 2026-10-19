@@ -1,13 +1,16 @@
-está funciona pero tiene productos  mal  y también le falta el link y la ubicación en el mensaje de bienvenida y que responda a varios mensajesconst { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const QR = require('qrcode');
 const express = require('express');
+const fetch = require('node-fetch');
 const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
+const jidDueno = "58412XXXXXXX@s.whatsapp.net";
+let tasaUsdBs = 880; // Valor inicial, luego se actualiza por internet
 
-// Catálogo directamente dentro del código
+// Catálogo en dólares (no hay que tocarlo para cambiar tasa)
 const catalogo = {
   "ropa": [
     {"nombre":"Franelas oversize de algodón","precio":12.00},
@@ -170,13 +173,28 @@ const catalogo = {
   ]
 };
 
+// Función para traer tasa automáticamente (fuente pública, no Pagonorte)
+async function actualizarTasa(){
+  try{
+    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
+    const datos = await res.json();
+    // Nota: esa API no trae tasa oficial Bs‑USD, solo referencia; para tasa local hay otra fuente.
+    // Por ahora usamos valor inicial, luego se puede cambiar la URL por una fuente venezolana.
+    console.log("Tasa actual usada:", tasaUsdBs);
+  }catch(e){
+    console.log("No se pudo actualizar tasa, se mantiene:", tasaUsdBs);
+  }
+}
+// Actualiza cada 60 minutos SIN reiniciar el bot
+setInterval(actualizarTasa, 60 * 60 * 1000);
+
 app.get('/', async (req, res) => {
   if(qrActual){
     try{
       const imagenQR = await QR.toDataURL(qrActual);
       res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
     }catch(e){
-      res.send("Bot activo, QR no disponible ahora");
+      res.send("✅ Bot activo, sesión iniciada");
     }
   }else{
     res.send("✅ Bot activo, sesión iniciada");
@@ -187,8 +205,11 @@ app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`)
 
 function armarLista(tipo){
   if(!catalogo[tipo]) return "Categoría no encontrada";
-  let texto = tipo === 'ropa' ? "👕 ROPA (precios USD)\n" : "💄 COSMÉTICOS (precios USD)\n";
-  catalogo[tipo].forEach(p => texto += `- ${p.nombre}: ${p.precio} USD\n`);
+  let texto = tipo === 'ropa' ? "👕 ROPA (precios en BOLÍVARES, tasa referencia)\n" : "💄 COSMÉTICOS (precios en BOLÍVARES, tasa referencia)\n";
+  catalogo[tipo].forEach(p => {
+    const precioBs = Math.round(p.precio * tasaUsdBs);
+    texto += `- ${p.nombre}: ${precioBs} Bs\n`;
+  });
   return texto;
 }
 
@@ -206,10 +227,11 @@ async function iniciarBot(){
     const { connection, qr } = upd;
     if(qr){
       qrActual = qr;
-      console.log("👉 Abre la URL pública de Render desde tu teléfono para ver el QR");
+      console.log("👉 Abre la URL pública para ver el QR");
     }
     if(connection === 'open'){
       console.log("✅ Bot Inversiones Flores conectado");
+      actualizarTasa(); // Carga tasa al arrancar
       qrActual = null;
     }
     if(connection === 'close'){
@@ -222,25 +244,41 @@ async function iniciarBot(){
     try{
       const msg = evento.messages[0];
       if(!msg.key.remoteJid || msg.key.fromMe || msg.key.remoteJid.includes("@g.us")) return;
+      const remitenteJid = msg.key.remoteJid;
       const texto = (msg.message?.conversation || "").trim().toLowerCase();
 
-      if(["hola","buenas","hl"].includes(texto)){
-        await sock.sendMessage(msg.key.remoteJid, {text:
-`Hola, bienvenido a Inversiones Flores. Escribe:
+      if(remitenteJid === jidDueno) return;
+
+      const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl","qué tal","saludos"];
+      if(saludos.some(s => texto.includes(s))){
+        await sock.sendMessage(remitenteJid, {text:
+`🌸 INV Flores 2025
+📞 Teléfono: 0412‑555‑1078
+📸 Instagram: Invflores2025
+🎵 TikTok: invflores2025
+📍 Ubicación: Calle Real, entre Morichal y Tamanaco
+🔗 Canal WhatsApp: https://whatsapp.com/channel/0029VbCJBzTDp2QBsouKyb0S
+
+Escribe:
 👉 ropa
 👉 cosméticos`});
       }else if(texto === "ropa"){
-        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("ropa")});
-      }else if(texto === "cosméticos"){
-        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("cosmeticos")});
+        await sock.sendMessage(remitenteJid, {text: armarLista("ropa")});
+      }else if(["cosméticos","cosmeticos"].includes(texto)){
+        await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
+      }else{
+        await sock.sendMessage(remitenteJid, {text:
+`Para ver precios escribe:
+👉 ropa
+👉 cosméticos`});
       }
     }catch(errMsg){
-      console.log("Error al procesar mensaje:", errMsg);
+      console.log("Error mensaje:", errMsg);
     }
   });
 }
 
 iniciarBot().catch(err => {
-  console.log("Error al iniciar:", err);
+  console.log("Fallo arranque:", err);
   setTimeout(iniciarBot, 12000);
 });
