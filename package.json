@@ -1,16 +1,16 @@
 {
-  "name": "bot-inversiones-flores",
+  "name": "bot-flores-render",
   "version": "1.0.0",
-  "main": "bot-whatsapp.js",
+  "main": "index.js",
+  "engines": {
+    "node": "18.x"
+  },
   "dependencies": {
-    "whatsapp-web.js": "^1.23.0",
+    "@whiskeysockets/baileys-legacy": "^6.5.0-legacy-1",
     "qrcode-terminal": "^0.12.0",
     "express": "^4.18.2"
   },
   "scripts": {
-    "start": "node bot-whatsapp.js"
-  },
-  "engines": {
-    "node": "18.x"
+    "start": "node index.js"
   }
 }
