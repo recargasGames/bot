@@ -1,21 +1,21 @@
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const qrcode = require('qrcode-terminal');
 const QR = require('qrcode');
 const express = require('express');
 const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
-// JID del número de la dueña para que el bot NO le responda
-const jidDueno = "584125551078@s.whatsapp.net";
 
-// Catálogo corregido desde tu inventario
+// Catálogo directamente dentro del código
 const catalogo = {
   "ropa": [
-    {"nombre":"Franelas oversize de algodón","precio":15.00},
-    {"nombre":"Blusas tejidas","precio":25.00},
-    {"nombre":"Chaqueta jean","precio":50.00},
-    {"nombre":"Franelas de caballero de algodón","precio":12.00},
-    {"nombre":"Pantalones de caballero","precio":32.00},
+    {"nombre":"Franelas oversize de algodón","precio":12.00},
+    {"nombre":"Blusas tejidas","precio":17.00},
+    {"nombre":"Chaqueta jean","precio":25.00},
+    {"nombre":"Franelas de caballero de algodón","precio":25.00},
+    {"nombre":"Franelas oversize micro algodón","precio":12.00},
+    {"nombre":"Pantalones de caballero","precio":30.00},
     {"nombre":"Pantalones de dama","precio":55.00},
     {"nombre":"Vestido de piel de durazno","precio":55.00},
     {"nombre":"Blusa con hebilla","precio":38.00},
@@ -26,6 +26,11 @@ const catalogo = {
     {"nombre":"Mono baggy","precio":15.00},
     {"nombre":"Conjunto shorts mono","precio":15.00},
     {"nombre":"Pijama 2 piezas lovely","precio":12.00},
+    {"nombre":"Cachero trenza par de du","precio":12.00},
+    {"nombre":"Par de niño","precio":12.00},
+    {"nombre":"Panty dolce niña","precio":52.00},
+    {"nombre":"Medias alu","precio":2.50},
+    {"nombre":"Boxer veko","precio":2.50},
     {"nombre":"Boxer calvin klein","precio":12.00},
     {"nombre":"Conjunto deportivo 3 piezas","precio":15.00},
     {"nombre":"Blusas acanaladas","precio":12.00},
@@ -33,8 +38,6 @@ const catalogo = {
     {"nombre":"Shorts deportivo","precio":15.00},
     {"nombre":"Licas kim","precio":16.00},
     {"nombre":"Batas de seda","precio":8.00},
-    {"nombre":"Medias alu","precio":2.50},
-    {"nombre":"Boxer veko","precio":2.50},
     {"nombre":"Conjunto deportivo niña","precio":25.00}
   ],
   "cosmeticos": [
@@ -62,8 +65,8 @@ const catalogo = {
     {"nombre":"Mini gancheta hawaiana","precio":1.50},
     {"nombre":"Ligas para el pelo","precio":1.00},
     {"nombre":"Polygel","precio":3.00},
-    {"nombre":"Monómero de 60 ml","precio":3.00},
-    {"nombre":"Monómeros 128 ml","precio":5.50},
+    {"nombre":"Monómero de 60 ml","precio":3.00},
+    {"nombre":"Monómeros 128 ml","precio":5.50},
     {"nombre":"Ganchetas","precio":5.50},
     {"nombre":"Rollo de papel para el punto","precio":2.50},
     {"nombre":"Toolistas monbray","precio":2.70},
@@ -73,11 +76,24 @@ const catalogo = {
     {"nombre":"Cintillo","precio":1.00},
     {"nombre":"Gorro para mechas","precio":1.80},
     {"nombre":"Efecto aurora","precio":1.00},
-    {"nombre":"Imán para uñas","precio":2.50},
+    {"nombre":"Iman para uñas","precio":2.50},
     {"nombre":"Lima spongie","precio":1.00},
     {"nombre":"Patico de baño","precio":2.60},
     {"nombre":"Sticker para uñas","precio":1.00},
     {"nombre":"Pega de uñas mxbom","precio":1.50},
+    {"nombre":"Pega de uñas antegu","precio":1.50},
+    {"nombre":"Palito de naranja paquete","precio":4.00},
+    {"nombre":"Paquete de palito de algodón","precio":1.50},
+    {"nombre":"Separador de dedos","precio":0.80},
+    {"nombre":"Lápiz de cejas cremoso mac","precio":0.80},
+    {"nombre":"Papel ere","precio":3.00},
+    {"nombre":"Kit de brochas para uñas","precio":3.50},
+    {"nombre":"Tijeras para cutículas","precio":1.50},
+    {"nombre":"Kit para puntos negros","precio":3.00},
+    {"nombre":"Coller","precio":5.00},
+    {"nombre":"Pulsera","precio":7.00},
+    {"nombre":"Pinzas para pestañas","precio":1.50},
+    {"nombre":"Abdidores","precio":1.50},
     {"nombre":"Pega salonpro","precio":2.50},
     {"nombre":"Removedor de pestañas","precio":2.50},
     {"nombre":"Zarcillo de oro chino","precio":3.30},
@@ -97,7 +113,7 @@ const catalogo = {
     {"nombre":"Aceite para cutícula bnc","precio":2.50},
     {"nombre":"Aceite para cutícula monbray","precio":1.80},
     {"nombre":"Top coat monbray","precio":3.00},
-    {"nombre":"Pintura semi permanente monbray","precio":3.20},
+    {"nombre":"Pintura semi permanente monb","precio":3.20},
     {"nombre":"6 en 1 monbray","precio":3.00},
     {"nombre":"Finish gel monbray","precio":3.50},
     {"nombre":"Protein bond monbray","precio":2.50},
@@ -122,7 +138,7 @@ const catalogo = {
     {"nombre":"Juego de esponjas","precio":1.00},
     {"nombre":"Delineador de ojos waterproof","precio":0.80},
     {"nombre":"Mopa para polvo","precio":2.00},
-    {"nombre":"Bálsamo","precio":1.00},
+    {"nombre":"Balsamo","precio":1.00},
     {"nombre":"Pinzas para cejas","precio":1.20},
     {"nombre":"Protector solar 90g","precio":2.50},
     {"nombre":"Esponja base","precio":1.80},
@@ -158,36 +174,47 @@ app.get('/', async (req, res) => {
   if(qrActual){
     try{
       const imagenQR = await QR.toDataURL(qrActual);
-      res.send(`<html><body style="text-align:center"><h1>Código QR del Bot</h1><img src="${imagenQR}" style="max-width:90%"></body></html>`);
+      res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
     }catch(e){
-      res.send("Bot activo, sesión iniciada");
+      res.send("Bot activo, QR no disponible ahora");
     }
   }else{
     res.send("✅ Bot activo, sesión iniciada");
   }
 });
 
-app.listen(puerto, () => console.log(`Servidor web en puerto ${puerto}`));
+app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`));
 
 function armarLista(tipo){
   if(!catalogo[tipo]) return "Categoría no encontrada";
-  let texto = tipo === "ropa" ? "👕 ROPA (precios USD)\n" : "💄 COSMÉTICOS (precios USD)\n";
+  let texto = tipo === 'ropa' ? "👕 ROPA (precios USD)\n" : "💄 COSMÉTICOS (precios USD)\n";
   catalogo[tipo].forEach(p => texto += `- ${p.nombre}: ${p.precio} USD\n`);
   return texto;
 }
 
 async function iniciarBot(){
   const { state, saveCreds } = await useMultiFileAuthState("./auth_botflores");
-  const sock = makeWASocket({ auth: state, printQRInTerminal: false, connectTimeoutMs: 60000 });
+  const sock = makeWASocket({
+    auth: state,
+    printQRInTerminal: false,
+    connectTimeoutMs: 60000,
+    retryRequestDelayMs: 2500
+  });
 
   sock.ev.on('creds.update', saveCreds);
-  sock.ev.on('connection.update', (upd) => {
+  sock.ev.on('connection.update', upd => {
     const { connection, qr } = upd;
-    if(qr){ qrActual = qr; console.log("Nuevo QR generado"); }
-    if(connection === "open"){ console.log("✅ Bot conectado"); qrActual = null; }
-    if(connection === "close"){
-      console.log("⚠️ Desconectado, reiniciando…");
-      setTimeout(iniciarBot,12000);
+    if(qr){
+      qrActual = qr;
+      console.log("👉 Abre la URL pública de Render desde tu teléfono para ver el QR");
+    }
+    if(connection === 'open'){
+      console.log("✅ Bot Inversiones Flores conectado");
+      qrActual = null;
+    }
+    if(connection === 'close'){
+      console.log("⚠️ Desconectado, reinicio en 12 segundos");
+      setTimeout(iniciarBot, 12000);
     }
   });
 
@@ -195,39 +222,25 @@ async function iniciarBot(){
     try{
       const msg = evento.messages[0];
       if(!msg.key.remoteJid || msg.key.fromMe || msg.key.remoteJid.includes("@g.us")) return;
-      const remitenteJid = msg.key.remoteJid;
       const texto = (msg.message?.conversation || "").trim().toLowerCase();
 
-      // Si es la dueña: NO responder
-      if(remitenteJid === jidDueno) return;
-
-      const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl"];
-      if(saludos.some(s => texto.includes(s))){
-        await sock.sendMessage(remitenteJid, {text:
-`🌸 INV Flores 2025
-📞 Teléfono: 0412‑555‑1078
-📸 Instagram: Invflores2025
-🎵 TikTok: invflores2025
-📍 Ubicación: Calle Real, entre Morichal y Tamanaco
-🔗 Canal WhatsApp: https://whatsapp.com/channel/0029VbCJBzTDp2QBsouKyb0S
-
-Escribe:
+      if(["hola","buenas","hl"].includes(texto)){
+        await sock.sendMessage(msg.key.remoteJid, {text:
+`Hola, bienvenido a Inversiones Flores. Escribe:
 👉 ropa
 👉 cosméticos`});
       }else if(texto === "ropa"){
-        await sock.sendMessage(remitenteJid, {text: armarLista("ropa")});
-      }else if(["cosméticos","cosmeticos"].includes(texto)){
-        await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
-      }else{
-        await sock.sendMessage(remitenteJid, {text:
-`Para ver precios escribe:
-👉 ropa
-👉 cosméticos`});
+        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("ropa")});
+      }else if(texto === "cosméticos"){
+        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("cosmeticos")});
       }
-    }catch(err){
-      console.log("Error mensaje:", err);
+    }catch(errMsg){
+      console.log("Error al procesar mensaje:", errMsg);
     }
   });
 }
 
-iniciarBot().catch(e => { console.log("Fallo arranque:",e); setTimeout(iniciarBot,15000); });
+iniciarBot().catch(err => {
+  console.log("Error al iniciar:", err);
+  setTimeout(iniciarBot, 12000);
+});
