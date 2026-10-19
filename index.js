@@ -1,4 +1,4 @@
-const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+está funciona pero tiene productos  mal  y también le falta el link y la ubicación en el mensaje de bienvenida y que responda a varios mensajesconst { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
 const QR = require('qrcode');
 const express = require('express');
@@ -6,10 +6,8 @@ const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
-const jidDueno = "58412XXXXXXX@s.whatsapp.net"; // Cambia por el JID real después de escanear QR
-const ultimoMensajeCliente = {}; // Guarda la última acción por número de cliente
 
-// Catálogo tal como lo pasaste
+// Catálogo directamente dentro del código
 const catalogo = {
   "ropa": [
     {"nombre":"Franelas oversize de algodón","precio":12.00},
@@ -178,7 +176,7 @@ app.get('/', async (req, res) => {
       const imagenQR = await QR.toDataURL(qrActual);
       res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
     }catch(e){
-      res.send("✅ Bot activo, sesión iniciada");
+      res.send("Bot activo, QR no disponible ahora");
     }
   }else{
     res.send("✅ Bot activo, sesión iniciada");
@@ -224,38 +222,17 @@ async function iniciarBot(){
     try{
       const msg = evento.messages[0];
       if(!msg.key.remoteJid || msg.key.fromMe || msg.key.remoteJid.includes("@g.us")) return;
-      const remitenteJid = msg.key.remoteJid;
       const texto = (msg.message?.conversation || "").trim().toLowerCase();
 
-      // Si es la dueña: no responder
-      if(remitenteJid === jidDueno) return;
-
-      const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl","qué tal","saludos"];
-      if(saludos.some(s => texto.includes(s))){
-        ultimoMensajeCliente[remitenteJid] = "saludo";
-        await sock.sendMessage(remitenteJid, {text:
-`🌸 INV Flores 2025
-📞 Teléfono: 0412‑555‑1078
-📸 Instagram: Invflores2025
-🎵 TikTok: invflores2025
-📍 Ubicación: Calle Real, entre Morichal y Tamanaco
-🔗 Canal WhatsApp: https://whatsapp.com/channel/0029VbCJBzTDp2QBsouKyb0S
-
-Escribe:
+      if(["hola","buenas","hl"].includes(texto)){
+        await sock.sendMessage(msg.key.remoteJid, {text:
+`Hola, bienvenido a Inversiones Flores. Escribe:
 👉 ropa
 👉 cosméticos`});
       }else if(texto === "ropa"){
-        ultimoMensajeCliente[remitenteJid] = "ropa";
-        await sock.sendMessage(remitenteJid, {text: armarLista("ropa")});
-      }else if(["cosméticos","cosmeticos"].includes(texto)){
-        ultimoMensajeCliente[remitenteJid] = "cosmeticos";
-        await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
-      }else{
-        // Solo aviso corto, NO repite toda la bienvenida
-        await sock.sendMessage(remitenteJid, {text:
-`Para ver precios escribe:
-👉 ropa
-👉 cosméticos`});
+        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("ropa")});
+      }else if(texto === "cosméticos"){
+        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("cosmeticos")});
       }
     }catch(errMsg){
       console.log("Error al procesar mensaje:", errMsg);
