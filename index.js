@@ -1,10 +1,10 @@
-const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys-legacy');
-const qrcode = require('qrcode-terminal');
+const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
+const qrcode = require('qrcode‑terminal');
 const express = require('express');
 const app = express();
 const puerto = process.env.PORT || 3000;
 
-// Ruta para tu herramienta de ping
+// Ruta para tu ping periódico
 app.get('/', (req, res) => res.send('Bot Inversiones Flores activo'));
 app.listen(puerto, () => console.log(`Puerto de vigilia abierto ${puerto}`));
 
