@@ -2,45 +2,45 @@ const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysocket
 const qrcode = require('qrcode-terminal');
 const QR = require('qrcode');
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
+let catalogo;
 
-// Ruta para ping y para ver el QR en imagen
+// Cargar catálogo desde archivo externo
+function cargarCatalogo(){
+  try{
+    const ruta = path.join(__dirname, "catalogo.json");
+    const texto = fs.readFileSync(ruta, "utf‑8");
+    catalogo = JSON.parse(texto);
+  }catch(e){
+    console.error("Error al leer catalogo.json:", e);
+    catalogo = {ropa:[], cosmeticos:[]};
+  }
+}
+cargarCatalogo();
+
+// Ruta web: ping + mostrar QR
 app.get('/', async (req, res) => {
   if(qrActual){
     try{
       const imagenQR = await QR.toDataURL(qrActual);
-      res.send(`<html><body style="text-align:center;"><h1>Escanea este QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
+      res.send(`<html><body style="text‑align:center;"><h1>Escanea este código QR</h1><img src="${imagenQR}" style="max‑width:90%;"></body></html>`);
     }catch(e){
       res.send("Bot activo, QR no disponible ahora");
     }
   }else{
-    res.send("Bot activo, ya hay sesión iniciada");
+    res.send("✅ Bot activo, sesión iniciada");
   }
 });
 
-app.listen(puerto, () => console.log(`Servicio abierto en puerto ${puerto}`));
-
-const catalogo = {
-  ropa: [
-    {nombre:"Franela oversize algodón", precio:12},
-    {nombre:"Blusa tejida", precio:17},
-    {nombre:"Chaqueta jean", precio:25},
-    {nombre:"Pantalón caballero", precio:30},
-    {nombre:"Pantalón dama", precio:55}
-  ],
-  cosmeticos: [
-    {nombre:"Pomada cejas", precio:1.50},
-    {nombre:"Kit manicure", precio:3.00},
-    {nombre:"Fijador maquillaje", precio:1.50},
-    {nombre:"Gel cejas", precio:2.00},
-    {nombre:"Brocha rubor", precio:1.00}
-  ]
-};
+app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`));
 
 function armarLista(tipo){
+  if(!catalogo[tipo]) return "Categoría no encontrada";
   let texto = tipo === 'ropa' ? "👕 ROPA (precios USD)\n" : "💄 COSMÉTICOS (precios USD)\n";
   catalogo[tipo].forEach(p => texto += `- ${p.nombre}: ${p.precio} USD\n`);
   return texto;
@@ -48,14 +48,14 @@ function armarLista(tipo){
 
 async function iniciarBot(){
   const { state, saveCreds } = await useMultiFileAuthState("./auth_botflores");
-  const sock = makeWASocket({ auth: state, printQRInTerminal:false }); // Desactivamos QR‑texto grande
+  const sock = makeWASocket({ auth: state, printQRInTerminal: false });
 
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', upd => {
     const { connection, qr } = upd;
     if(qr){
       qrActual = qr;
-      console.log("👉 Abre la URL pública de Render en tu teléfono para ver el QR listo para escanear");
+      console.log("👉 Abre la URL pública de Render desde tu teléfono para ver el QR");
     }
     if(connection === 'open'){
       console.log("✅ Bot Inversiones Flores conectado");
