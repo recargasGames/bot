@@ -1,16 +1,13 @@
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode-terminal');
 const QR = require('qrcode');
 const express = require('express');
-const fetch = require('node-fetch');
 const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
 const jidDueno = "58412XXXXXXX@s.whatsapp.net";
-let tasaUsdBs = 880; // Valor inicial, luego se actualiza por internet
+let tasaUsdBs = 880;
 
-// Catálogo en dólares (no hay que tocarlo para cambiar tasa)
 const catalogo = {
   "ropa": [
     {"nombre":"Franelas oversize de algodón","precio":12.00},
@@ -173,19 +170,15 @@ const catalogo = {
   ]
 };
 
-// Función para traer tasa automáticamente (fuente pública, no Pagonorte)
 async function actualizarTasa(){
   try{
     const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
     const datos = await res.json();
-    // Nota: esa API no trae tasa oficial Bs‑USD, solo referencia; para tasa local hay otra fuente.
-    // Por ahora usamos valor inicial, luego se puede cambiar la URL por una fuente venezolana.
-    console.log("Tasa actual usada:", tasaUsdBs);
+    console.log("Tasa usada actualmente:", tasaUsdBs);
   }catch(e){
-    console.log("No se pudo actualizar tasa, se mantiene:", tasaUsdBs);
+    console.log("No se pudo actualizar la tasa, se mantiene:", tasaUsdBs);
   }
 }
-// Actualiza cada 60 minutos SIN reiniciar el bot
 setInterval(actualizarTasa, 60 * 60 * 1000);
 
 app.get('/', async (req, res) => {
@@ -201,7 +194,7 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`));
+app.listen(puerto, () => console.log(`Servicio web abierto en el puerto ${puerto}`));
 
 function armarLista(tipo){
   if(!catalogo[tipo]) return "Categoría no encontrada";
@@ -231,7 +224,7 @@ async function iniciarBot(){
     }
     if(connection === 'open'){
       console.log("✅ Bot Inversiones Flores conectado");
-      actualizarTasa(); // Carga tasa al arrancar
+      actualizarTasa();
       qrActual = null;
     }
     if(connection === 'close'){
