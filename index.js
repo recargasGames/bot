@@ -1,11 +1,27 @@
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const qrcode = require('qrcode-terminal');
+const QR = require('qrcode');
 const express = require('express');
 const app = express();
 const puerto = process.env.PORT || 3000;
 
-app.get('/', (req, res) => res.send('Bot Inversiones Flores activo'));
-app.listen(puerto, () => console.log(`Puerto de vigilia abierto ${puerto}`));
+let qrActual = null;
+
+// Ruta para ping y para ver el QR en imagen
+app.get('/', async (req, res) => {
+  if(qrActual){
+    try{
+      const imagenQR = await QR.toDataURL(qrActual);
+      res.send(`<html><body style="text-align:center;"><h1>Escanea este QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
+    }catch(e){
+      res.send("Bot activo, QR no disponible ahora");
+    }
+  }else{
+    res.send("Bot activo, ya hay sesión iniciada");
+  }
+});
+
+app.listen(puerto, () => console.log(`Servicio abierto en puerto ${puerto}`));
 
 const catalogo = {
   ropa: [
@@ -32,13 +48,19 @@ function armarLista(tipo){
 
 async function iniciarBot(){
   const { state, saveCreds } = await useMultiFileAuthState("./auth_botflores");
-  const sock = makeWASocket({ auth: state, printQRInTerminal:true });
+  const sock = makeWASocket({ auth: state, printQRInTerminal:false }); // Desactivamos QR‑texto grande
 
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', upd => {
     const { connection, qr } = upd;
-    if(qr) qrcode.generate(qr, {small:true});
-    if(connection === 'open') console.log("✅ Bot Inversiones Flores conectado");
+    if(qr){
+      qrActual = qr;
+      console.log("👉 Abre la URL pública de Render en tu teléfono para ver el QR listo para escanear");
+    }
+    if(connection === 'open'){
+      console.log("✅ Bot Inversiones Flores conectado");
+      qrActual = null;
+    }
     if(connection === 'close'){
       console.log("⚠️ Desconectado, reinicio en 8 segundos");
       setTimeout(iniciarBot, 8000);
