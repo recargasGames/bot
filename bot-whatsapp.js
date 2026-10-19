@@ -1,68 +1,75 @@
-const { Client, LocalAuth } = require('whatsapp-web.js');
+const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys-legacy');
 const qrcode = require('qrcode-terminal');
 const express = require('express');
 const app = express();
 const puerto = process.env.PORT || 3000;
 
-// Endpoint para tu herramienta de visita periódica
-app.get('/', (req, res) => res.send('Bot activo'));
-app.listen(puerto, () => console.log(`Servicio de vigilia en puerto ${puerto}`));
+// Ruta para tu herramienta de ping
+app.get('/', (req, res) => res.send('Bot Inversiones Flores activo'));
+app.listen(puerto, () => console.log(`Puerto de vigilia abierto ${puerto}`));
 
 const catalogo = {
   ropa: [
-    {"nombre":"Franela oversize algodón","precio":12.00},
-    {"nombre":"Blusa tejida","precio":17.00},
-    {"nombre":"Chaqueta jean","precio":25.00},
-    {"nombre":"Pantalón caballero","precio":30.00},
-    {"nombre":"Pantalón dama","precio":55.00}
+    {nombre:"Franela oversize algodón", precio:12},
+    {nombre:"Blusa tejida", precio:17},
+    {nombre:"Chaqueta jean", precio:25},
+    {nombre:"Pantalón caballero", precio:30},
+    {nombre:"Pantalón dama", precio:55}
   ],
   cosmeticos: [
-    {"nombre":"Pomada para cejas","precio":1.50},
-    {"nombre":"Kit de manicure","precio":3.00},
-    {"nombre":"Fijador de maquillaje","precio":1.50},
-    {"nombre":"Gel para cejas","precio":2.00},
-    {"nombre":"Brocha para rubor","precio":1.00}
+    {nombre:"Pomada cejas", precio:1.50},
+    {nombre:"Kit manicure", precio:3.00},
+    {nombre:"Fijador maquillaje", precio:1.50},
+    {nombre:"Gel cejas", precio:2.00},
+    {nombre:"Brocha rubor", precio:1.00}
   ]
 };
 
 function armarLista(tipo){
-  let texto = tipo === 'ropa' ? "👕 ROPA (precios en USD)\n" : "💄 COSMÉTICOS (precios en USD)\n";
-  catalogo[tipo].forEach(prod => texto += `- ${prod.nombre}: ${prod.precio} USD\n`);
+  let texto = tipo === 'ropa' ? "👕 ROPA (precios USD)\n" : "💄 COSMÉTICOS (precios USD)\n";
+  catalogo[tipo].forEach(p => texto += `- ${p.nombre}: ${p.precio} USD\n`);
   return texto;
 }
 
-const cliente = new Client({
-  authStrategy: new LocalAuth(),
-  puppeteer: {
-    args: ['--no‑sandbox','--disable‑setuid‑sandbox','--disable‑dev‑shm‑usage']
-  }
-});
+async function iniciarBot(){
+  const { state, saveCreds } = await useMultiFileAuthState("./auth_botflores");
+  const sock = makeWASocket({ auth: state, printQRInTerminal:true });
 
-cliente.on('qr', codigo => {
-  qrcode.generate(codigo, {small:true});
-  console.log('👉 Escanea este código QR con WhatsApp');
-});
+  sock.ev.on('creds.update', saveCreds);
+  sock.ev.on('connection.update', upd => {
+    const { connection, qr } = upd;
+    if(qr) qrcode.generate(qr, {small:true});
+    if(connection === 'open') console.log("✅ Bot Inversiones Flores conectado");
+    if(connection === 'close'){
+      console.log("⚠️ Desconectado, reinicio en 8 segundos");
+      setTimeout(iniciarBot, 8000);
+    }
+  });
 
-cliente.on('ready', () => console.log('✅ Bot Inversiones Flores conectado'));
+  sock.ev.on('messages.upsert', async evento => {
+    const msg = evento.messages[0];
+    if(!msg.key.remoteJid || msg.key.fromMe || msg.key.remoteJid.includes("@g.us")) return;
+    const texto = (msg.message?.conversation || "").trim().toLowerCase();
 
-cliente.on('message', async mensaje => {
-  if(mensaje.fromMe || mensaje.from.includes('@g.us')) return;
-  const texto = mensaje.body.trim().toLowerCase();
-
-  if(['hola','buenas','hl'].includes(texto)){
-    await mensaje.reply(`Hola, bienvenido a Inversiones Flores. ¿Qué producto quieres consultar?
-Escribe:
+    if(["hola","buenas","hl"].includes(texto)){
+      await sock.sendMessage(msg.key.remoteJid, {text:
+`Hola, bienvenido a Inversiones Flores. Escribe:
 👉 ropa
-👉 cosméticos`);
-  }else if(texto === 'ropa'){
-    await mensaje.reply(armarLista('ropa'));
-  }else if(texto === 'cosméticos'){
-    await mensaje.reply(armarLista('cosmeticos'));
-  }else{
-    await mensaje.reply(`Para ver precios escribe:
+👉 cosméticos`});
+    }else if(texto === "ropa"){
+      await sock.sendMessage(msg.key.remoteJid, {text: armarLista("ropa")});
+    }else if(texto === "cosméticos"){
+      await sock.sendMessage(msg.key.remoteJid, {text: armarLista("cosmeticos")});
+    }else{
+      await sock.sendMessage(msg.key.remoteJid, {text:
+`Para ver precios escribe:
 👉 ropa
-👉 cosméticos`);
-  }
-});
+👉 cosméticos`});
+    }
+  });
+}
 
-cliente.initialize();
+iniciarBot().catch(err => {
+  console.log("Error al iniciar:", err);
+  setTimeout(iniciarBot, 8000);
+});
