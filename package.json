@@ -1,13 +1,13 @@
 {
-  "name": "bot-flores-render",
+  "name": "bot‑flores‑render‑nueva‑cuenta",
   "version": "1.0.0",
   "main": "index.js",
   "engines": {
-    "node": "18.x"
+    "node": "20.x"
   },
   "dependencies": {
-    "@whiskeysockets/baileys-legacy": "^6.5.0-legacy-1",
-    "qrcode-terminal": "^0.12.0",
+    "@whiskeysockets/baileys": "^6.7.5",
+    "qrcode‑terminal": "^0.12.0",
     "express": "^4.18.2"
   },
   "scripts": {
