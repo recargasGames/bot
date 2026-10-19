@@ -1,5 +1,5 @@
 {
-  "name": "bot‑flores‑render‑nueva‑cuenta",
+  "name": "bot-flores-render",
   "version": "1.0.0",
   "main": "index.js",
   "engines": {
@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "@whiskeysockets/baileys": "^6.7.5",
-    "qrcode‑terminal": "^0.12.0",
+    "qrcode-terminal": "^0.12.0",
     "express": "^4.18.2"
   },
   "scripts": {
