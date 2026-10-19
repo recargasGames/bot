@@ -1,3 +1,4 @@
+global.crypto = require('crypto');
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const QR = require('qrcode');
 const express = require('express');
