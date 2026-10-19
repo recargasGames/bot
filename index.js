@@ -5,8 +5,10 @@ const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
+// JID del número de la dueña para que el bot NO le responda
+const jidDueno = "584125551078@s.whatsapp.net";
 
-// Catálogo extraído y corregido desde las fotos de inventario
+// Catálogo corregido desde tu inventario
 const catalogo = {
   "ropa": [
     {"nombre":"Franelas oversize de algodón","precio":15.00},
@@ -33,8 +35,6 @@ const catalogo = {
     {"nombre":"Batas de seda","precio":8.00},
     {"nombre":"Medias alu","precio":2.50},
     {"nombre":"Boxer veko","precio":2.50},
-    {"nombre":"Bóxer veko","precio":2.50},
-    {"nombre":"Bóxer Calvin Klein","precio":12.00},
     {"nombre":"Conjunto deportivo niña","precio":25.00}
   ],
   "cosmeticos": [
@@ -73,7 +73,7 @@ const catalogo = {
     {"nombre":"Cintillo","precio":1.00},
     {"nombre":"Gorro para mechas","precio":1.80},
     {"nombre":"Efecto aurora","precio":1.00},
-    {"nombre":"Iman para uñas","precio":2.50},
+    {"nombre":"Imán para uñas","precio":2.50},
     {"nombre":"Lima spongie","precio":1.00},
     {"nombre":"Patico de baño","precio":2.60},
     {"nombre":"Sticker para uñas","precio":1.00},
@@ -122,7 +122,7 @@ const catalogo = {
     {"nombre":"Juego de esponjas","precio":1.00},
     {"nombre":"Delineador de ojos waterproof","precio":0.80},
     {"nombre":"Mopa para polvo","precio":2.00},
-    {"nombre":"Balsamo","precio":1.00},
+    {"nombre":"Bálsamo","precio":1.00},
     {"nombre":"Pinzas para cejas","precio":1.20},
     {"nombre":"Protector solar 90g","precio":2.50},
     {"nombre":"Esponja base","precio":1.80},
@@ -158,7 +158,7 @@ app.get('/', async (req, res) => {
   if(qrActual){
     try{
       const imagenQR = await QR.toDataURL(qrActual);
-      res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
+      res.send(`<html><body style="text-align:center"><h1>Código QR del Bot</h1><img src="${imagenQR}" style="max-width:90%"></body></html>`);
     }catch(e){
       res.send("Bot activo, sesión iniciada");
     }
@@ -167,38 +167,27 @@ app.get('/', async (req, res) => {
   }
 });
 
-app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`));
+app.listen(puerto, () => console.log(`Servidor web en puerto ${puerto}`));
 
 function armarLista(tipo){
   if(!catalogo[tipo]) return "Categoría no encontrada";
-  let texto = tipo === 'ropa' ? "👕 ROPA (precios USD)\n" : "💄 COSMÉTICOS (precios USD)\n";
+  let texto = tipo === "ropa" ? "👕 ROPA (precios USD)\n" : "💄 COSMÉTICOS (precios USD)\n";
   catalogo[tipo].forEach(p => texto += `- ${p.nombre}: ${p.precio} USD\n`);
   return texto;
 }
 
 async function iniciarBot(){
   const { state, saveCreds } = await useMultiFileAuthState("./auth_botflores");
-  const sock = makeWASocket({
-    auth: state,
-    printQRInTerminal: false,
-    connectTimeoutMs: 60000,
-    retryRequestDelayMs: 2500
-  });
+  const sock = makeWASocket({ auth: state, printQRInTerminal: false, connectTimeoutMs: 60000 });
 
   sock.ev.on('creds.update', saveCreds);
-  sock.ev.on('connection.update', upd => {
+  sock.ev.on('connection.update', (upd) => {
     const { connection, qr } = upd;
-    if(qr){
-      qrActual = qr;
-      console.log("👉 Abre la URL pública de Render desde tu teléfono para ver el QR");
-    }
-    if(connection === 'open'){
-      console.log("✅ Bot Inversiones Flores conectado");
-      qrActual = null;
-    }
-    if(connection === 'close'){
-      console.log("⚠️ Desconectado, reinicio en 12 segundos");
-      setTimeout(iniciarBot, 12000);
+    if(qr){ qrActual = qr; console.log("Nuevo QR generado"); }
+    if(connection === "open"){ console.log("✅ Bot conectado"); qrActual = null; }
+    if(connection === "close"){
+      console.log("⚠️ Desconectado, reiniciando…");
+      setTimeout(iniciarBot,12000);
     }
   });
 
@@ -206,10 +195,15 @@ async function iniciarBot(){
     try{
       const msg = evento.messages[0];
       if(!msg.key.remoteJid || msg.key.fromMe || msg.key.remoteJid.includes("@g.us")) return;
+      const remitenteJid = msg.key.remoteJid;
       const texto = (msg.message?.conversation || "").trim().toLowerCase();
 
-      if(["hola","buenas","hl"].includes(texto)){
-        await sock.sendMessage(msg.key.remoteJid, {text:
+      // Si es la dueña: NO responder
+      if(remitenteJid === jidDueno) return;
+
+      const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl"];
+      if(saludos.some(s => texto.includes(s))){
+        await sock.sendMessage(remitenteJid, {text:
 `🌸 INV Flores 2025
 📞 Teléfono: 0412‑555‑1078
 📸 Instagram: Invflores2025
@@ -221,22 +215,19 @@ Escribe:
 👉 ropa
 👉 cosméticos`});
       }else if(texto === "ropa"){
-        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("ropa")});
-      }else if(texto === "cosméticos"){
-        await sock.sendMessage(msg.key.remoteJid, {text: armarLista("cosmeticos")});
+        await sock.sendMessage(remitenteJid, {text: armarLista("ropa")});
+      }else if(["cosméticos","cosmeticos"].includes(texto)){
+        await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
       }else{
-        await sock.sendMessage(msg.key.remoteJid, {text:
+        await sock.sendMessage(remitenteJid, {text:
 `Para ver precios escribe:
 👉 ropa
 👉 cosméticos`});
       }
-    }catch(errMsg){
-      console.log("Error al procesar mensaje:", errMsg);
+    }catch(err){
+      console.log("Error mensaje:", err);
     }
   });
 }
 
-iniciarBot().catch(err => {
-  console.log("Error al iniciar:", err);
-  setTimeout(iniciarBot, 12000);
-});
+iniciarBot().catch(e => { console.log("Fallo arranque:",e); setTimeout(iniciarBot,15000); });
