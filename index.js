@@ -6,10 +6,10 @@ const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
-// Reemplaza este valor por el JID real de la dueña después de escanear QR
-const jidDueno = "58412XXXXXXX@s.whatsapp.net";
+const jidDueno = "58412XXXXXXX@s.whatsapp.net"; // Cambia por el JID real después de escanear QR
+const ultimoMensajeCliente = {}; // Guarda la última acción por número de cliente
 
-// Catálogo tal como lo pasaste (precios y nombres que usas actualmente)
+// Catálogo tal como lo pasaste
 const catalogo = {
   "ropa": [
     {"nombre":"Franelas oversize de algodón","precio":12.00},
@@ -230,9 +230,9 @@ async function iniciarBot(){
       // Si es la dueña: no responder
       if(remitenteJid === jidDueno) return;
 
-      // Lista ampliada de saludos
       const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl","qué tal","saludos"];
       if(saludos.some(s => texto.includes(s))){
+        ultimoMensajeCliente[remitenteJid] = "saludo";
         await sock.sendMessage(remitenteJid, {text:
 `🌸 INV Flores 2025
 📞 Teléfono: 0412‑555‑1078
@@ -245,10 +245,13 @@ Escribe:
 👉 ropa
 👉 cosméticos`});
       }else if(texto === "ropa"){
+        ultimoMensajeCliente[remitenteJid] = "ropa";
         await sock.sendMessage(remitenteJid, {text: armarLista("ropa")});
       }else if(["cosméticos","cosmeticos"].includes(texto)){
+        ultimoMensajeCliente[remitenteJid] = "cosmeticos";
         await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
       }else{
+        // Solo aviso corto, NO repite toda la bienvenida
         await sock.sendMessage(remitenteJid, {text:
 `Para ver precios escribe:
 👉 ropa
