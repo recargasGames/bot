@@ -1,5 +1,4 @@
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
-const qrcode = require('qrcode-terminal');
 const QR = require('qrcode');
 const express = require('express');
 const app = express();
@@ -7,15 +6,14 @@ const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
 
-// Catálogo directamente dentro del código
+// Catálogo extraído y corregido desde las fotos de inventario
 const catalogo = {
   "ropa": [
-    {"nombre":"Franelas oversize de algodón","precio":12.00},
-    {"nombre":"Blusas tejidas","precio":17.00},
-    {"nombre":"Chaqueta jean","precio":25.00},
-    {"nombre":"Franelas de caballero de algodón","precio":25.00},
-    {"nombre":"Franelas oversize micro algodón","precio":12.00},
-    {"nombre":"Pantalones de caballero","precio":30.00},
+    {"nombre":"Franelas oversize de algodón","precio":15.00},
+    {"nombre":"Blusas tejidas","precio":25.00},
+    {"nombre":"Chaqueta jean","precio":50.00},
+    {"nombre":"Franelas de caballero de algodón","precio":12.00},
+    {"nombre":"Pantalones de caballero","precio":32.00},
     {"nombre":"Pantalones de dama","precio":55.00},
     {"nombre":"Vestido de piel de durazno","precio":55.00},
     {"nombre":"Blusa con hebilla","precio":38.00},
@@ -26,11 +24,6 @@ const catalogo = {
     {"nombre":"Mono baggy","precio":15.00},
     {"nombre":"Conjunto shorts mono","precio":15.00},
     {"nombre":"Pijama 2 piezas lovely","precio":12.00},
-    {"nombre":"Cachero trenza par de du","precio":12.00},
-    {"nombre":"Par de niño","precio":12.00},
-    {"nombre":"Panty dolce niña","precio":52.00},
-    {"nombre":"Medias alu","precio":2.50},
-    {"nombre":"Boxer veko","precio":2.50},
     {"nombre":"Boxer calvin klein","precio":12.00},
     {"nombre":"Conjunto deportivo 3 piezas","precio":15.00},
     {"nombre":"Blusas acanaladas","precio":12.00},
@@ -38,6 +31,10 @@ const catalogo = {
     {"nombre":"Shorts deportivo","precio":15.00},
     {"nombre":"Licas kim","precio":16.00},
     {"nombre":"Batas de seda","precio":8.00},
+    {"nombre":"Medias alu","precio":2.50},
+    {"nombre":"Boxer veko","precio":2.50},
+    {"nombre":"Bóxer veko","precio":2.50},
+    {"nombre":"Bóxer Calvin Klein","precio":12.00},
     {"nombre":"Conjunto deportivo niña","precio":25.00}
   ],
   "cosmeticos": [
@@ -65,8 +62,8 @@ const catalogo = {
     {"nombre":"Mini gancheta hawaiana","precio":1.50},
     {"nombre":"Ligas para el pelo","precio":1.00},
     {"nombre":"Polygel","precio":3.00},
-    {"nombre":"Monómero de 60 ml","precio":3.00},
-    {"nombre":"Monómeros 128 ml","precio":5.50},
+    {"nombre":"Monómero de 60 ml","precio":3.00},
+    {"nombre":"Monómeros 128 ml","precio":5.50},
     {"nombre":"Ganchetas","precio":5.50},
     {"nombre":"Rollo de papel para el punto","precio":2.50},
     {"nombre":"Toolistas monbray","precio":2.70},
@@ -81,19 +78,6 @@ const catalogo = {
     {"nombre":"Patico de baño","precio":2.60},
     {"nombre":"Sticker para uñas","precio":1.00},
     {"nombre":"Pega de uñas mxbom","precio":1.50},
-    {"nombre":"Pega de uñas antegu","precio":1.50},
-    {"nombre":"Palito de naranja paquete","precio":4.00},
-    {"nombre":"Paquete de palito de algodón","precio":1.50},
-    {"nombre":"Separador de dedos","precio":0.80},
-    {"nombre":"Lápiz de cejas cremoso mac","precio":0.80},
-    {"nombre":"Papel ere","precio":3.00},
-    {"nombre":"Kit de brochas para uñas","precio":3.50},
-    {"nombre":"Tijeras para cutículas","precio":1.50},
-    {"nombre":"Kit para puntos negros","precio":3.00},
-    {"nombre":"Coller","precio":5.00},
-    {"nombre":"Pulsera","precio":7.00},
-    {"nombre":"Pinzas para pestañas","precio":1.50},
-    {"nombre":"Abdidores","precio":1.50},
     {"nombre":"Pega salonpro","precio":2.50},
     {"nombre":"Removedor de pestañas","precio":2.50},
     {"nombre":"Zarcillo de oro chino","precio":3.30},
@@ -113,7 +97,7 @@ const catalogo = {
     {"nombre":"Aceite para cutícula bnc","precio":2.50},
     {"nombre":"Aceite para cutícula monbray","precio":1.80},
     {"nombre":"Top coat monbray","precio":3.00},
-    {"nombre":"Pintura semi permanente monb","precio":3.20},
+    {"nombre":"Pintura semi permanente monbray","precio":3.20},
     {"nombre":"6 en 1 monbray","precio":3.00},
     {"nombre":"Finish gel monbray","precio":3.50},
     {"nombre":"Protein bond monbray","precio":2.50},
@@ -176,7 +160,7 @@ app.get('/', async (req, res) => {
       const imagenQR = await QR.toDataURL(qrActual);
       res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
     }catch(e){
-      res.send("Bot activo, QR no disponible ahora");
+      res.send("Bot activo, sesión iniciada");
     }
   }else{
     res.send("✅ Bot activo, sesión iniciada");
@@ -226,13 +210,25 @@ async function iniciarBot(){
 
       if(["hola","buenas","hl"].includes(texto)){
         await sock.sendMessage(msg.key.remoteJid, {text:
-`Hola, bienvenido a Inversiones Flores. Escribe:
+`🌸 INV Flores 2025
+📞 Teléfono: 0412‑555‑1078
+📸 Instagram: Invflores2025
+🎵 TikTok: invflores2025
+📍 Ubicación: Calle Real, entre Morichal y Tamanaco
+🔗 Canal WhatsApp: https://whatsapp.com/channel/0029VbCJBzTDp2QBsouKyb0S
+
+Escribe:
 👉 ropa
 👉 cosméticos`});
       }else if(texto === "ropa"){
         await sock.sendMessage(msg.key.remoteJid, {text: armarLista("ropa")});
       }else if(texto === "cosméticos"){
         await sock.sendMessage(msg.key.remoteJid, {text: armarLista("cosmeticos")});
+      }else{
+        await sock.sendMessage(msg.key.remoteJid, {text:
+`Para ver precios escribe:
+👉 ropa
+👉 cosméticos`});
       }
     }catch(errMsg){
       console.log("Error al procesar mensaje:", errMsg);
