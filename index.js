@@ -1,4 +1,6 @@
-global.crypto = require('crypto');
+const crypto = require('crypto');
+global.crypto = crypto;
+
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const QR = require('qrcode');
 const express = require('express');
@@ -186,7 +188,7 @@ app.get('/', async (req, res) => {
   if(qrActual){
     try{
       const imagenQR = await QR.toDataURL(qrActual);
-      res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
+      res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR para iniciar sesión</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
     }catch(e){
       res.send("✅ Bot activo, sesión iniciada");
     }
@@ -209,6 +211,8 @@ function armarLista(tipo){
 
 async function iniciarBot(){
   const { state, saveCreds } = await useMultiFileAuthState("./auth_botflores");
+  let necesitaQR = !state?.creds?.me;
+
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
@@ -221,7 +225,7 @@ async function iniciarBot(){
     const { connection, qr } = upd;
     if(qr){
       qrActual = qr;
-      console.log("👉 Abre la URL pública para ver el QR");
+      console.log("👉 Recarga la página web para ver el nuevo código QR");
     }
     if(connection === 'open'){
       console.log("✅ Bot Inversiones Flores conectado");
@@ -229,6 +233,7 @@ async function iniciarBot(){
       qrActual = null;
     }
     if(connection === 'close'){
+      qrActual = null;
       console.log("⚠️ Desconectado, reinicio en 12 segundos");
       setTimeout(iniciarBot, 12000);
     }
