@@ -8,7 +8,7 @@ const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
-const jidDueno = "58412XXXXXXX@s.whatsapp.net";
+const jidDueno = "5865675576@s.whatsapp.net";
 let tasaUsdBs = 880;
 
 // === PON AQUÍ TUS CREDENCIALES DIRECTAMENTE ===
