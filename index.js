@@ -9,7 +9,7 @@ const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
 const jidDueno = "58412XXXXXXX@s.whatsapp.net";
-let tasaUsdBs = 880;
+let tasaUsdBs = 880; // valor inicial temporal
 
 const catalogo = {
   "ropa": [
@@ -173,17 +173,76 @@ const catalogo = {
   ]
 };
 
-async function actualizarTasa(){
-  try{
-    const res = await fetch("https://api.exchangerate-api.com/v4/latest/USD");
-    const datos = await res.json();
-    console.log("Tasa usada actualmente:", tasaUsdBs);
-  }catch(e){
-    console.log("No se pudo actualizar la tasa, se mantiene:", tasaUsdBs);
+// Consulta de tasa BCV por PagoNorte
+async function actualizarTasaPagonorte(){
+  const apiKey = process.env.PAGONORTE_API_KEY;
+  const apiSecret = process.env.PAGONORTE_API_SECRET;
+  const urlPagonorte = "https://pagonorte.net/recargas/api.jsp";
+
+  if (!apiKey || !apiSecret) {
+    console.log("⚠️ Faltan credenciales PagoNorte, se mantiene tasa:", tasaUsdBs);
+    return;
+  }
+  try {
+    const params = new URLSearchParams();
+    params.append("action", "tasas");
+    params.append("api_key", apiKey);
+    params.append("api_secret", apiSecret);
+
+    const respuesta = await fetch(urlPagonorte, {
+      method: "POST",
+      headers: { "Content‑Type": "application/x‑www‑form‑urlencoded" },
+      body: params.toString()
+    });
+    const datos = await respuesta.json();
+    if (datos.ok === true && datos.alerta === "green" && datos.tasa_bcv) {
+      const nuevaTasa = parseFloat(datos.tasa_bcv);
+      if (!isNaN(nuevaTasa)) {
+        tasaUsdBs = nuevaTasa;
+        console.log("✅ Tasa BCV actualizada desde PagoNorte:", tasaUsdBs);
+      }
+    } else {
+      console.log("⚠️ Respuesta no válida PagoNorte, mantiene tasa:", tasaUsdBs);
+    }
+  } catch (err) {
+    console.log("❌ Error PagoNorte, mantiene tasa:", tasaUsdBs, err.message);
   }
 }
-setInterval(actualizarTasa, 60 * 60 * 1000);
+actualizarTasaPagonorte();
+setInterval(actualizarTasaPagonorte, 60 * 60 * 1000);
 
+// Función IA OpenAI‑proxy (lista para activar)
+async function llamarIA(mensajeUsuario) {
+  const claveOpenAI = process.env.OPENAI_API_KEY;
+  const urlProxy = process.env.OPENAI_PROXY_URL;
+  if (!claveOpenAI || !urlProxy) {
+    return "Disculpa, la asistencia inteligente aún no está configurada.";
+  }
+  try {
+    const respuesta = await fetch(urlProxy, {
+      method: "POST",
+      headers: {
+        "Content‑Type": "application/json",
+        "Authorization": `Bearer ${claveOpenAI}`
+      },
+      body: JSON.stringify({
+        model: "gpt‑3.5‑turbo",
+        messages: [
+          {role:"system", content:"Eres asistente de la tienda Inversiones Flores. Responde breve y amable; vende ropa y cosméticos, escribe 'ropa' o 'cosméticos' para ver listas."},
+          {role:"user", content: mensajeUsuario}
+        ],
+        temperature:0.6
+      })
+    });
+    const datos = await respuesta.json();
+    return datos.choices?.[0]?.message?.content || "No puedo responder esa consulta ahora.";
+  } catch (err) {
+    console.log("Error IA:", err);
+    return "Lo siento, hubo un fallo con la asistencia.";
+  }
+}
+
+// Servidor web para mostrar QR
 app.get('/', async (req, res) => {
   if(qrActual){
     try{
@@ -196,12 +255,11 @@ app.get('/', async (req, res) => {
     res.send("✅ Bot activo, sesión iniciada");
   }
 });
-
-app.listen(puerto, () => console.log(`Servicio web abierto en el puerto ${puerto}`));
+app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`));
 
 function armarLista(tipo){
   if(!catalogo[tipo]) return "Categoría no encontrada";
-  let texto = tipo === 'ropa' ? "👕 ROPA (precios en BOLÍVARES, tasa referencia)\n" : "💄 COSMÉTICOS (precios en BOLÍVARES, tasa referencia)\n";
+  let texto = tipo === 'ropa' ? "👕 ROPA (precios en BOLÍVARES, tasa BCV‑PagoNorte)\n" : "💄 COSMÉTICOS (precios en BOLÍVARES, tasa BCV‑PagoNorte)\n";
   catalogo[tipo].forEach(p => {
     const precioBs = Math.round(p.precio * tasaUsdBs);
     texto += `- ${p.nombre}: ${precioBs} Bs\n`;
@@ -225,11 +283,11 @@ async function iniciarBot(){
     const { connection, qr } = upd;
     if(qr){
       qrActual = qr;
-      console.log("👉 Recarga la página web para ver el nuevo código QR");
+      console.log("👉 Recarga la página web para ver nuevo código QR");
     }
     if(connection === 'open'){
       console.log("✅ Bot Inversiones Flores conectado");
-      actualizarTasa();
+      actualizarTasaPagonorte();
       qrActual = null;
     }
     if(connection === 'close'){
@@ -266,10 +324,8 @@ Escribe:
       }else if(["cosméticos","cosmeticos"].includes(texto)){
         await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
       }else{
-        await sock.sendMessage(remitenteJid, {text:
-`Para ver precios escribe:
-👉 ropa
-👉 cosméticos`});
+        const respuestaIA = await llamarIA(texto);
+        await sock.sendMessage(remitenteJid, {text: respuestaIA});
       }
     }catch(errMsg){
       console.log("Error mensaje:", errMsg);
