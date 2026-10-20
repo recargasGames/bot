@@ -4,6 +4,7 @@ global.crypto = crypto;
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const QR = require('qrcode');
 const express = require('express');
+const { obtenerTasaBCV } = require("./api/tasa‑bcv");
 const app = express();
 const puerto = process.env.PORT || 3000;
 
@@ -173,41 +174,21 @@ const catalogo = {
   ]
 };
 
-// Consulta tasa BCV PagoNorte (con limpieza de caracteres ocultos)
+// Función para actualizar tasa llamando al módulo separado
 async function actualizarTasaPagonorte(){
-  const apiKeyRaw = process.env.PAGONORTE_API_KEY || "";
-  const apiSecretRaw = process.env.PAGONORTE_API_SECRET || "";
-  const apiKey = apiKeyRaw.trim();
-  const apiSecret = apiSecretRaw.trim();
-  const urlPagonorte = "https://pagonorte.net/recargas/api.jsp";
+  const apiKey = process.env.PAGONORTE_API_KEY || "";
+  const apiSecret = process.env.PAGONORTE_API_SECRET || "";
 
-  if (!apiKey || !apiSecret) {
-    console.log("⚠️ Faltan credenciales PagoNorte, se mantiene tasa:", tasaUsdBs);
-    return;
-  }
   try {
-    const params = new URLSearchParams();
-    params.append("action", "tasas");
-    params.append("api_key", apiKey);
-    params.append("api_secret", apiSecret);
-
-    const respuesta = await fetch(urlPagonorte, {
-      method: "POST",
-      headers: { "Content‑Type": "application/x‑www‑form‑urlencoded" },
-      body: params.toString()
-    });
-    const datos = await respuesta.json();
-    if (datos.ok === true && datos.alerta === "green" && datos.tasa_bcv) {
-      const nuevaTasa = parseFloat(datos.tasa_bcv);
-      if (!isNaN(nuevaTasa)) {
-        tasaUsdBs = nuevaTasa;
-        console.log("✅ Tasa BCV actualizada desde PagoNorte:", tasaUsdBs);
-      }
+    const nuevaTasa = await obtenerTasaBCV(apiKey, apiSecret);
+    if (nuevaTasa !== null && !isNaN(nuevaTasa)) {
+      tasaUsdBs = nuevaTasa;
+      console.log("✅ Tasa BCV actualizada desde PagoNorte:", tasaUsdBs);
     } else {
-      console.log("⚠️ Respuesta no válida PagoNorte, mantiene tasa:", tasaUsdBs, datos);
+      console.log("⚠️ No se pudo obtener tasa, mantiene:", tasaUsdBs);
     }
-  } catch (err) {
-    console.log("❌ Error PagoNorte, mantiene tasa:", tasaUsdBs, err.message);
+  } catch(err) {
+    console.log("❌ Error al consultar módulo tasa‑bcv:", tasaUsdBs, err.message);
   }
 }
 actualizarTasaPagonorte();
