@@ -173,10 +173,12 @@ const catalogo = {
   ]
 };
 
-// Consulta de tasa BCV por PagoNorte
+// Consulta tasa BCV PagoNorte (con limpieza de caracteres ocultos)
 async function actualizarTasaPagonorte(){
-  const apiKey = process.env.PAGONORTE_API_KEY;
-  const apiSecret = process.env.PAGONORTE_API_SECRET;
+  const apiKeyRaw = process.env.PAGONORTE_API_KEY || "";
+  const apiSecretRaw = process.env.PAGONORTE_API_SECRET || "";
+  const apiKey = apiKeyRaw.trim();
+  const apiSecret = apiSecretRaw.trim();
   const urlPagonorte = "https://pagonorte.net/recargas/api.jsp";
 
   if (!apiKey || !apiSecret) {
@@ -202,7 +204,7 @@ async function actualizarTasaPagonorte(){
         console.log("✅ Tasa BCV actualizada desde PagoNorte:", tasaUsdBs);
       }
     } else {
-      console.log("⚠️ Respuesta no válida PagoNorte, mantiene tasa:", tasaUsdBs);
+      console.log("⚠️ Respuesta no válida PagoNorte, mantiene tasa:", tasaUsdBs, datos);
     }
   } catch (err) {
     console.log("❌ Error PagoNorte, mantiene tasa:", tasaUsdBs, err.message);
