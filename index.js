@@ -4,13 +4,17 @@ global.crypto = crypto;
 const { default: makeWASocket, useMultiFileAuthState } = require('@whiskeysockets/baileys');
 const QR = require('qrcode');
 const express = require('express');
-const { obtenerTasaBCV } = require("./api/tasa‑bcv");
 const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
 const jidDueno = "58412XXXXXXX@s.whatsapp.net";
-let tasaUsdBs = 880; // valor inicial temporal
+let tasaUsdBs = 880;
+
+// === PON AQUÍ TUS CREDENCIALES DIRECTAMENTE ===
+const PAGONORTE_API_KEY = "pn_live_37d2bb35be3342e623d63417bb49592e32f3b2efd065a8ac";
+const PAGONORTE_API_SECRET = "ps_live_38d48c01ad5fcecf4d00983d7ca8110a5fa287eee5d13edb277dcd550dcff0dc";
+// ==============================================
 
 const catalogo = {
   "ropa": [
@@ -174,63 +178,48 @@ const catalogo = {
   ]
 };
 
-// Función para actualizar tasa llamando al módulo separado
 async function actualizarTasaPagonorte(){
-  const apiKey = process.env.PAGONORTE_API_KEY || "";
-  const apiSecret = process.env.PAGONORTE_API_SECRET || "";
+  const limpiarCadena = (texto) => texto.replace(/[\u2000-\u200F\uFEFF\u00A0]/g,"").replace(/\s+/g,"").trim();
+  const apiKey = limpiarCadena(PAGONORTE_API_KEY);
+  const apiSecret = limpiarCadena(PAGONORTE_API_SECRET);
+  const urlPagonorte = "https://pagonorte.net/recargas/api.jsp";
 
   try {
-    const nuevaTasa = await obtenerTasaBCV(apiKey, apiSecret);
-    if (nuevaTasa !== null && !isNaN(nuevaTasa)) {
-      tasaUsdBs = nuevaTasa;
-      console.log("✅ Tasa BCV actualizada desde PagoNorte:", tasaUsdBs);
+    const params = new URLSearchParams();
+    params.append("action", "tasas");
+    params.append("api_key", apiKey);
+    params.append("api_secret", apiSecret);
+    const respuesta = await fetch(urlPagonorte, {
+      method:"POST",
+      headers:{"Content‑Type":"application/x‑www‑form‑urlencoded"},
+      body:params.toString()
+    });
+    const datos = await respuesta.json();
+    if (datos.ok === true && datos.alerta === "green" && datos.tasa_bcv) {
+      const nuevaTasa = parseFloat(datos.tasa_bcv);
+      if (!isNaN(nuevaTasa)) {
+        tasaUsdBs = nuevaTasa;
+        console.log("✅ Tasa BCV actualizada:", tasaUsdBs);
+      }
     } else {
-      console.log("⚠️ No se pudo obtener tasa, mantiene:", tasaUsdBs);
+      console.log("⚠️ No se pudo leer tasa, mantiene:", tasaUsdBs);
     }
   } catch(err) {
-    console.log("❌ Error al consultar módulo tasa‑bcv:", tasaUsdBs, err.message);
+    console.log("❌ Error PagoNorte, mantiene:", tasaUsdBs, err.message);
   }
 }
 actualizarTasaPagonorte();
 setInterval(actualizarTasaPagonorte, 60 * 60 * 1000);
 
-// Función IA OpenAI‑proxy (lista para activar)
 async function llamarIA(mensajeUsuario) {
-  const claveOpenAI = process.env.OPENAI_API_KEY;
-  const urlProxy = process.env.OPENAI_PROXY_URL;
-  if (!claveOpenAI || !urlProxy) {
-    return "Disculpa, la asistencia inteligente aún no está configurada.";
-  }
-  try {
-    const respuesta = await fetch(urlProxy, {
-      method: "POST",
-      headers: {
-        "Content‑Type": "application/json",
-        "Authorization": `Bearer ${claveOpenAI}`
-      },
-      body: JSON.stringify({
-        model: "gpt‑3.5‑turbo",
-        messages: [
-          {role:"system", content:"Eres asistente de la tienda Inversiones Flores. Responde breve y amable; vende ropa y cosméticos, escribe 'ropa' o 'cosméticos' para ver listas."},
-          {role:"user", content: mensajeUsuario}
-        ],
-        temperature:0.6
-      })
-    });
-    const datos = await respuesta.json();
-    return datos.choices?.[0]?.message?.content || "No puedo responder esa consulta ahora.";
-  } catch (err) {
-    console.log("Error IA:", err);
-    return "Lo siento, hubo un fallo con la asistencia.";
-  }
+  return "La asistencia inteligente aún no está configurada.";
 }
 
-// Servidor web para mostrar QR
 app.get('/', async (req, res) => {
   if(qrActual){
     try{
       const imagenQR = await QR.toDataURL(qrActual);
-      res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR para iniciar sesión</h1><img src="${imagenQR}" style="max-width:90%;"></body></html>`);
+      res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR para iniciar sesión</h1><img src="${imagenQR}" style="max‑width:90%;"></body></html>`);
     }catch(e){
       res.send("✅ Bot activo, sesión iniciada");
     }
@@ -252,43 +241,26 @@ function armarLista(tipo){
 
 async function iniciarBot(){
   const { state, saveCreds } = await useMultiFileAuthState("./auth_botflores");
-  let necesitaQR = !state?.creds?.me;
-
   const sock = makeWASocket({
     auth: state,
     printQRInTerminal: false,
     connectTimeoutMs: 60000,
     retryRequestDelayMs: 2500
   });
-
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', upd => {
     const { connection, qr } = upd;
-    if(qr){
-      qrActual = qr;
-      console.log("👉 Recarga la página web para ver nuevo código QR");
-    }
-    if(connection === 'open'){
-      console.log("✅ Bot Inversiones Flores conectado");
-      actualizarTasaPagonorte();
-      qrActual = null;
-    }
-    if(connection === 'close'){
-      qrActual = null;
-      console.log("⚠️ Desconectado, reinicio en 12 segundos");
-      setTimeout(iniciarBot, 12000);
-    }
+    if(qr){ qrActual = qr; console.log("👉 Recarga la página web para ver el QR"); }
+    if(connection === 'open'){ console.log("✅ Bot Inversiones Flores conectado"); actualizarTasaPagonorte(); qrActual=null; }
+    if(connection === 'close'){ qrActual=null; console.log("⚠️ Desconectado, reinicio en 12s"); setTimeout(iniciarBot,12000); }
   });
-
   sock.ev.on('messages.upsert', async evento => {
     try{
       const msg = evento.messages[0];
       if(!msg.key.remoteJid || msg.key.fromMe || msg.key.remoteJid.includes("@g.us")) return;
       const remitenteJid = msg.key.remoteJid;
       const texto = (msg.message?.conversation || "").trim().toLowerCase();
-
       if(remitenteJid === jidDueno) return;
-
       const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl","qué tal","saludos"];
       if(saludos.some(s => texto.includes(s))){
         await sock.sendMessage(remitenteJid, {text:
@@ -310,13 +282,7 @@ Escribe:
         const respuestaIA = await llamarIA(texto);
         await sock.sendMessage(remitenteJid, {text: respuestaIA});
       }
-    }catch(errMsg){
-      console.log("Error mensaje:", errMsg);
-    }
+    }catch(errMsg){ console.log("Error mensaje:", errMsg); }
   });
 }
-
-iniciarBot().catch(err => {
-  console.log("Fallo arranque:", err);
-  setTimeout(iniciarBot, 12000);
-});
+iniciarBot().catch(err => { console.log("Fallo arranque:", err); setTimeout(iniciarBot,12000); });
