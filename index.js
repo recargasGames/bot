@@ -9,7 +9,7 @@ const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
 const jidDueno = "58412XXXXXXX@s.whatsapp.net";
-let tasaUsdBs = 880; // valor inicial temporal
+let tasaUsdBs = 880;
 
 const catalogo = {
   "ropa": [
@@ -173,7 +173,6 @@ const catalogo = {
   ]
 };
 
-// Consulta la tasa BCV‑USD desde API pública Crom Studio
 async function actualizarTasaBCV() {
   try {
     const respuesta = await fetch("https://datos.cromstudio.com.ve/tasa");
@@ -181,7 +180,7 @@ async function actualizarTasaBCV() {
     const nuevaTasa = parseFloat(datos.tasas.USD);
     if (!isNaN(nuevaTasa)) {
       tasaUsdBs = nuevaTasa;
-      console.log("✅ Tasa BCV actualizada (Crom Studio):", tasaUsdBs);
+      console.log("✅ Tasa BCV actualizada :", tasaUsdBs);
     } else {
       console.log("⚠️ No se pudo leer tasa, mantiene:", tasaUsdBs);
     }
@@ -192,12 +191,6 @@ async function actualizarTasaBCV() {
 actualizarTasaBCV();
 setInterval(actualizarTasaBCV, 60 * 60 * 1000);
 
-// IA: aún sin configurar
-async function llamarIA(mensajeUsuario) {
-  return "Disculpa, la asistencia inteligente aún no está configurada.";
-}
-
-// Servidor web para mostrar el código QR
 app.get('/', async (req, res) => {
   if(qrActual){
     try{
@@ -244,6 +237,7 @@ async function iniciarBot(){
       const remitenteJid = msg.key.remoteJid;
       const texto = (msg.message?.conversation || "").trim().toLowerCase();
       if(remitenteJid === jidDueno) return;
+
       const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl","qué tal","saludos"];
       if(saludos.some(s => texto.includes(s))){
         await sock.sendMessage(remitenteJid, {text:
@@ -261,10 +255,8 @@ Escribe:
         await sock.sendMessage(remitenteJid, {text: armarLista("ropa")});
       }else if(["cosméticos","cosmeticos"].includes(texto)){
         await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
-      }else{
-        const respuestaIA = await llamarIA(texto);
-        await sock.sendMessage(remitenteJid, {text: respuestaIA});
       }
+      // Si es cualquier otro mensaje: NO responde nada, evita mensajes molestos
     }catch(errMsg){ console.log("Error mensaje:", errMsg); }
   });
 }
