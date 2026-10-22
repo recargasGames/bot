@@ -63,15 +63,15 @@ const catalogo = {
     {"nombre":"Pigmento cejas","precio":1.50},
     {"nombre":"Pigmento color‑1","precio":3.50},
     {"nombre":"Pigmento aurora","precio":4.00},
-    {"nombre":"Dona para el cabello","precio":3.00},
+    {"nombre":"Dona para cabello","precio":3.00},
     {"nombre":"Gancheta hawaiana 3 piezas","precio":1.50},
     {"nombre":"Mini gancheta hawaiana","precio":1.50},
-    {"nombre":"Ligas para el pelo","precio":1.00},
+    {"nombre":"Ligas para cabello","precio":1.00},
     {"nombre":"Polygel","precio":3.00},
-    {"nombre":"Monómero de 60 ml","precio":3.00},
-    {"nombre":"Monómeros 128 ml","precio":5.50},
+    {"nombre":"Monómero de 60 ml","precio":3.00},
+    {"nombre":"Monómero de 128 ml","precio":5.50},
     {"nombre":"Ganchetas","precio":5.50},
-    {"nombre":"Rollo de papel para el punto","precio":2.50},
+    {"nombre":"Rollo papel para punto","precio":2.50},
     {"nombre":"Toolistas monbray","precio":2.70},
     {"nombre":"Marcador para cejas","precio":1.00},
     {"nombre":"Peine saca piojos","precio":2.00},
@@ -83,29 +83,29 @@ const catalogo = {
     {"nombre":"Lima spongie","precio":1.00},
     {"nombre":"Patico de baño","precio":2.60},
     {"nombre":"Sticker para uñas","precio":1.00},
-    {"nombre":"Pega de uñas mxbom","precio":1.50},
-    {"nombre":"Pega de uñas antegu","precio":1.50},
-    {"nombre":"Palito de naranja paquete","precio":4.00},
-    {"nombre":"Paquete de palito de algodón","precio":1.50},
-    {"nombre":"Separador de dedos","precio":0.80},
-    {"nombre":"Lápiz de cejas cremoso mac","precio":0.80},
+    {"nombre":"Pega uñas mxbom","precio":1.50},
+    {"nombre":"Pega uñas antegu","precio":1.50},
+    {"nombre":"Palito naranja paquete","precio":4.00},
+    {"nombre":"Paquete palitos algodón","precio":1.50},
+    {"nombre":"Separador dedos","precio":0.80},
+    {"nombre":"Lápiz cejas cremoso mac","precio":0.80},
     {"nombre":"Papel ere","precio":3.00},
-    {"nombre":"Kit de brochas para uñas","precio":3.50},
-    {"nombre":"Tijeras para cutículas","precio":1.50},
-    {"nombre":"Kit para puntos negros","precio":3.00},
+    {"nombre":"Kit brochas uñas","precio":3.50},
+    {"nombre":"Tijeras cutículas","precio":1.50},
+    {"nombre":"Kit puntos negros","precio":3.00},
     {"nombre":"Coller","precio":5.00},
     {"nombre":"Pulsera","precio":7.00},
-    {"nombre":"Pinzas para pestañas","precio":1.50},
+    {"nombre":"Pinzas pestañas","precio":1.50},
     {"nombre":"Abdidores","precio":1.50},
     {"nombre":"Pega salonpro","precio":2.50},
-    {"nombre":"Removedor de pestañas","precio":2.50},
-    {"nombre":"Zarcillo de oro chino","precio":3.30},
-    {"nombre":"Zarcillo de plástico","precio":5.00},
-    {"nombre":"Zarcillo de 3 piezas","precio":5.00},
-    {"nombre":"Paquete de 500 uñas","precio":3.60},
-    {"nombre":"Peine de plástico","precio":1.00},
-    {"nombre":"Limas de uñas monbray","precio":1.50},
-    {"nombre":"Decoración para uñas","precio":5.50},
+    {"nombre":"Removedor pestañas","precio":2.50},
+    {"nombre":"Zarcillo oro chino","precio":3.30},
+    {"nombre":"Zarcillo plástico","precio":5.00},
+    {"nombre":"Zarcillo 3 piezas","precio":5.00},
+    {"nombre":"Paquete 500 uñas","precio":3.60},
+    {"nombre":"Peine plástico","precio":1.00},
+    {"nombre":"Limas uñas monbray","precio":1.50},
+    {"nombre":"Decoración uñas","precio":5.50},
     {"nombre":"Corta cutícula","precio":2.50},
     {"nombre":"Corta cutícula profesional","precio":5.00},
     {"nombre":"Lámpara con lupa","precio":15.00},
@@ -141,7 +141,7 @@ const catalogo = {
     {"nombre":"Juego de esponjas","precio":1.00},
     {"nombre":"Delineador de ojos waterproof","precio":0.80},
     {"nombre":"Mopa para polvo","precio":2.00},
-    {"nombre":"Balsamo","precio":1.00},
+    {"nombre":"Bálsamo","precio":1.00},
     {"nombre":"Pinzas para cejas","precio":1.20},
     {"nombre":"Protector solar 90g","precio":2.50},
     {"nombre":"Esponja base","precio":1.80},
@@ -151,7 +151,7 @@ const catalogo = {
     {"nombre":"Combo de colonia","precio":1.50},
     {"nombre":"Polvo de hada","precio":1.00},
     {"nombre":"Brillos líquidos hanifei","precio":1.50},
-    {"nombre":"Labiales matte de corazón","precio":1.50},
+    {"nombre":"Labiales matte corazón","precio":1.50},
     {"nombre":"Brillos mágicos","precio":1.50},
     {"nombre":"Tinta labios","precio":1.50},
     {"nombre":"Mini gloss","precio":1.00},
@@ -160,13 +160,13 @@ const catalogo = {
     {"nombre":"Perfume de aceite","precio":5.00},
     {"nombre":"Desodorante lady speed stick","precio":1.00},
     {"nombre":"Pomada 2 en 1 mac","precio":1.20},
-    {"nombre":"Anillos para pega de pestañas","precio":0.20},
+    {"nombre":"Anillos para pestañas","precio":0.20},
     {"nombre":"Polvo acrílico","precio":1.50},
-    {"nombre":"Rimel sheglan","precio":1.80},
+    {"nombre":"Rímel sheglan","precio":1.80},
     {"nombre":"Brillo de uñas monbray tradicional","precio":1.30},
     {"nombre":"Vasito de vidrio","precio":2.00},
     {"nombre":"Corrector de ojeras conceal","precio":2.00},
-    {"nombre":"Pincel para el dibujo de uñas","precio":1.50},
+    {"nombre":"Pincel para dibujo en uñas","precio":1.50},
     {"nombre":"Brocha para maquillaje","precio":2.50},
     {"nombre":"Sombra de ojos manzana","precio":3.00},
     {"nombre":"Lápiz labial SHEGLAN","precio":1.80}
@@ -180,12 +180,12 @@ async function actualizarTasaBCV() {
     const nuevaTasa = parseFloat(datos.tasas.USD);
     if (!isNaN(nuevaTasa)) {
       tasaUsdBs = nuevaTasa;
-      console.log("✅ Tasa BCV actualizada :", tasaUsdBs);
+      console.log("✅ tasa actualizada");
     } else {
-      console.log("⚠️ No se pudo leer tasa, mantiene:", tasaUsdBs);
+      console.log("⚠️ No se pudo leer tasa, mantiene:", tasaUsdBs);
     }
   } catch (err) {
-    console.log("❌ Fallo al consultar API‑tasa, mantiene:", tasaUsdBs, err.message);
+    console.log("❌ Fallo al consultar API‑tasa, mantiene:", tasaUsdBs, err.message);
   }
 }
 actualizarTasaBCV();
@@ -197,20 +197,20 @@ app.get('/', async (req, res) => {
       const imagenQR = await QR.toDataURL(qrActual);
       res.send(`<html><body style="text-align:center;"><h1>Escanea este código QR para iniciar sesión</h1><img src="${imagenQR}" style="max‑width:90%;"></body></html>`);
     }catch(e){
-      res.send("✅ Bot activo, sesión iniciada");
+      res.send("✅ Bot activo, sesión iniciada");
     }
   }else{
-    res.send("✅ Bot activo, sesión iniciada");
+    res.send("✅ Bot activo, sesión iniciada");
   }
 });
 app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`));
 
 function armarLista(tipo){
   if(!catalogo[tipo]) return "Categoría no encontrada";
-  let texto = tipo === 'ropa' ? "👕 ROPA (precios en BOLÍVARES, tasa BCV‑Crom Studio)\n" : "💄 COSMÉTICOS (precios en BOLÍVARES, tasa BCV‑Crom Studio)\n";
+  let texto = tipo === 'ropa' ? "👕 ROPA (precios en BOLÍVARES)\n" : "💄 COSMÉTICOS (precios en BOLÍVARES)\n";
   catalogo[tipo].forEach(p => {
     const precioBs = Math.round(p.precio * tasaUsdBs);
-    texto += `- ${p.nombre}: ${precioBs} Bs\n`;
+    texto += `- ${p.nombre}: ${precioBs} Bs\n`;
   });
   return texto;
 }
@@ -226,9 +226,9 @@ async function iniciarBot(){
   sock.ev.on('creds.update', saveCreds);
   sock.ev.on('connection.update', upd => {
     const { connection, qr } = upd;
-    if(qr){ qrActual = qr; console.log("👉 Recarga la página web para ver el QR"); }
-    if(connection === 'open'){ console.log("✅ Bot Inversiones Flores conectado"); actualizarTasaBCV(); qrActual=null; }
-    if(connection === 'close'){ qrActual=null; console.log("⚠️ Desconectado, reinicio en 12 segundos"); setTimeout(iniciarBot,12000); }
+    if(qr){ qrActual = qr; console.log("👉 Recarga la página web para ver el QR"); }
+    if(connection === 'open'){ console.log("✅ Bot Inversiones Flores conectado"); actualizarTasaBCV(); qrActual = null; }
+    if(connection === 'close'){ qrActual = null; console.log("⚠️ Desconectado, reinicio en 12 segundos"); setTimeout(iniciarBot,12000); }
   });
   sock.ev.on('messages.upsert', async evento => {
     try{
@@ -238,8 +238,9 @@ async function iniciarBot(){
       const texto = (msg.message?.conversation || "").trim().toLowerCase();
       if(remitenteJid === jidDueno) return;
 
-      const saludos = ["hola","buenas","buenos días","buenas tardes","buenas noches","hl","qué tal","saludos"];
-      if(saludos.some(s => texto.includes(s))){
+      // Solo estos saludos formales activan respuesta
+      const saludosValidos = ["hola","buenos días","buen día","buenas tardes","buenas noches"];
+      if(saludosValidos.includes(texto)){
         await sock.sendMessage(remitenteJid, {text:
 `🌸 INV Flores 2025
 📞 Teléfono: 0412‑555‑1078
@@ -256,7 +257,7 @@ Escribe:
       }else if(["cosméticos","cosmeticos"].includes(texto)){
         await sock.sendMessage(remitenteJid, {text: armarLista("cosmeticos")});
       }
-      // Si es cualquier otro mensaje: NO responde nada, evita mensajes molestos
+      // Cualquier otro mensaje: no responde nada
     }catch(errMsg){ console.log("Error mensaje:", errMsg); }
   });
 }
