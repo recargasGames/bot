@@ -8,13 +8,8 @@ const app = express();
 const puerto = process.env.PORT || 3000;
 
 let qrActual = null;
-const jidDueno = "5865675576@s.whatsapp.net";
-let tasaUsdBs = 880;
-
-// === PON AQUÍ TUS CREDENCIALES DIRECTAMENTE ===
-const PAGONORTE_API_KEY = "pn_live_37d2bb35be3342e623d63417bb49592e32f3b2efd065a8ac";
-const PAGONORTE_API_SECRET = "ps_live_38d48c01ad5fcecf4d00983d7ca8110a5fa287eee5d13edb277dcd550dcff0dc";
-// ==============================================
+const jidDueno = "58412XXXXXXX@s.whatsapp.net";
+let tasaUsdBs = 880; // valor inicial temporal
 
 const catalogo = {
   "ropa": [
@@ -178,43 +173,31 @@ const catalogo = {
   ]
 };
 
-async function actualizarTasaPagonorte(){
-  const limpiarCadena = (texto) => texto.replace(/[\u2000-\u200F\uFEFF\u00A0]/g,"").replace(/\s+/g,"").trim();
-  const apiKey = limpiarCadena(PAGONORTE_API_KEY);
-  const apiSecret = limpiarCadena(PAGONORTE_API_SECRET);
-  const urlPagonorte = "https://pagonorte.net/recargas/api.jsp";
-
+// Consulta la tasa BCV‑USD desde API pública Crom Studio
+async function actualizarTasaBCV() {
   try {
-    const params = new URLSearchParams();
-    params.append("action", "tasas");
-    params.append("api_key", apiKey);
-    params.append("api_secret", apiSecret);
-    const respuesta = await fetch(urlPagonorte, {
-      method:"POST",
-      headers:{"Content‑Type":"application/x‑www‑form‑urlencoded"},
-      body:params.toString()
-    });
+    const respuesta = await fetch("https://datos.cromstudio.com.ve/tasa");
     const datos = await respuesta.json();
-    if (datos.ok === true && datos.alerta === "green" && datos.tasa_bcv) {
-      const nuevaTasa = parseFloat(datos.tasa_bcv);
-      if (!isNaN(nuevaTasa)) {
-        tasaUsdBs = nuevaTasa;
-        console.log("✅ Tasa BCV actualizada:", tasaUsdBs);
-      }
+    const nuevaTasa = parseFloat(datos.tasas.USD);
+    if (!isNaN(nuevaTasa)) {
+      tasaUsdBs = nuevaTasa;
+      console.log("✅ Tasa BCV actualizada (Crom Studio):", tasaUsdBs);
     } else {
       console.log("⚠️ No se pudo leer tasa, mantiene:", tasaUsdBs);
     }
-  } catch(err) {
-    console.log("❌ Error PagoNorte, mantiene:", tasaUsdBs, err.message);
+  } catch (err) {
+    console.log("❌ Fallo al consultar API‑tasa, mantiene:", tasaUsdBs, err.message);
   }
 }
-actualizarTasaPagonorte();
-setInterval(actualizarTasaPagonorte, 60 * 60 * 1000);
+actualizarTasaBCV();
+setInterval(actualizarTasaBCV, 60 * 60 * 1000);
 
+// IA: aún sin configurar
 async function llamarIA(mensajeUsuario) {
-  return "La asistencia inteligente aún no está configurada.";
+  return "Disculpa, la asistencia inteligente aún no está configurada.";
 }
 
+// Servidor web para mostrar el código QR
 app.get('/', async (req, res) => {
   if(qrActual){
     try{
@@ -231,7 +214,7 @@ app.listen(puerto, () => console.log(`Servicio web abierto en puerto ${puerto}`)
 
 function armarLista(tipo){
   if(!catalogo[tipo]) return "Categoría no encontrada";
-  let texto = tipo === 'ropa' ? "👕 ROPA (precios en BOLÍVARES, tasa BCV‑PagoNorte)\n" : "💄 COSMÉTICOS (precios en BOLÍVARES, tasa BCV‑PagoNorte)\n";
+  let texto = tipo === 'ropa' ? "👕 ROPA (precios en BOLÍVARES, tasa BCV‑Crom Studio)\n" : "💄 COSMÉTICOS (precios en BOLÍVARES, tasa BCV‑Crom Studio)\n";
   catalogo[tipo].forEach(p => {
     const precioBs = Math.round(p.precio * tasaUsdBs);
     texto += `- ${p.nombre}: ${precioBs} Bs\n`;
@@ -251,8 +234,8 @@ async function iniciarBot(){
   sock.ev.on('connection.update', upd => {
     const { connection, qr } = upd;
     if(qr){ qrActual = qr; console.log("👉 Recarga la página web para ver el QR"); }
-    if(connection === 'open'){ console.log("✅ Bot Inversiones Flores conectado"); actualizarTasaPagonorte(); qrActual=null; }
-    if(connection === 'close'){ qrActual=null; console.log("⚠️ Desconectado, reinicio en 12s"); setTimeout(iniciarBot,12000); }
+    if(connection === 'open'){ console.log("✅ Bot Inversiones Flores conectado"); actualizarTasaBCV(); qrActual=null; }
+    if(connection === 'close'){ qrActual=null; console.log("⚠️ Desconectado, reinicio en 12 segundos"); setTimeout(iniciarBot,12000); }
   });
   sock.ev.on('messages.upsert', async evento => {
     try{
